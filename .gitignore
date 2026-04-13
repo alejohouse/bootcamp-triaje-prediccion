@@ -1,0 +1,28 @@
+# Entorno virtual
+.venv/
+venv/
+env/
+__pycache__/
+*.py[cod]
+
+# Archivos del sistema macOS
+.DS_Store
+
+# Archivos de modelos grandes (superan 100MB de GitHub)
+models/*.pkl
+models/*.joblib
+
+# Datos grandes
+insumos/Final_Augmented_dataset_Diseases_and_Symptoms.csv
+insumos/registro_procedimientos_medicos_diagnosticos_2019.csv
+
+# Outputs grandes
+outputs/*.npz
+outputs/*.csv
+
+# Jupyter Notebooks checkpoints
+.ipynb_checkpoints/
+
+# Variables de entorno
+.env
+*.env
