@@ -12,8 +12,6 @@ Este proyecto integra dos fuentes de datos para construir un pipeline de predicc
 |---|---|
 | `Final_Augmented_dataset_Diseases_and_Symptoms.csv` | +190 MB · 773 enfermedades · 382 síntomas |
 | `Morbilidad_urgencias_Hospital_Pitalito_20260406.xlsx` | Registros reales de urgencias del hospital |
-| `TriageUrgencias.csv` | Histórico de niveles de triaje asignados |
-| `registro_procedimientos_medicos_diagnosticos_2019.csv` | Procedimientos y diagnósticos (2019) |
 
 ### Qué predice el sistema
 
