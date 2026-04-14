@@ -38,9 +38,7 @@ proyecto_bootcamp/
 │
 ├── insumos/                    # Datos fuente (no subir a Git — ver .gitignore)
 │   ├── Final_Augmented_dataset_Diseases_and_Symptoms.csv
-│   ├── Morbilidad_urgencias_Hospital_Pitalito_20260406.xlsx
-│   ├── TriageUrgencias.csv
-│   └── registro_procedimientos_medicos_diagnosticos_2019.csv
+│   └── Morbilidad_urgencias_Hospital_Pitalito_20260406.xlsx
 │
 ├── models/                     # Modelos entrenados (.pkl) — generados automáticamente
 │   ├── disease_model.pkl       # Modelo Random Forest para enfermedades
@@ -205,7 +203,7 @@ openpyxl>=3.1
 
 ## 👥 Equipo
 
-Proyecto desarrollado como trabajo de grado en el marco del **Bootcamp de Ciencia de Datos**.  
+Proyecto desarrollado como proyecto en el marco del **Bootcamp de Inteligencia Artificial**.  
 Datos proporcionados por el **Hospital de Pitalito, Huila — Colombia**.
 
 ---
