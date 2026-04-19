@@ -13,29 +13,24 @@ import seaborn as sns
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from src.config import (
     MODELS_DIR, OUTPUTS_DIR, MORBILIDAD_XLSX,
-    TRIAGE_EXCLUDE, SINDROMATIC_TO_SYMPTOMS, DISEASE_TO_DIAGNOSTICO
+    TRIAJE_EXCLUIDO, SINDROMATICO_A_SINTOMAS
 )
 from src.pipeline import MedicalPredictionPipeline
-from src.data_preparation import dx_to_symptom_vector
+from src.data_preparation import dx_to_sintoma_vector
 
 
-def evaluate_disease_on_hospital_data(pipeline, df_urgencias, sample_size=500):
+def evaluar_enfermedad_en_datos_hospital(pipeline, df_urgencias, sample_size=500):
     """
     Evalúa el modelo de enfermedad contra NombreDiagnostico del hospital.
-
-    Para cada registro del hospital:
-    1. Toma el DxSindromatico
-    2. Lo convierte a síntomas
-    3. Predice la enfermedad
-    4. Compara con NombreDiagnostico real
+    Convierte DxSindrómatico → síntomas en español → predice enfermedad (español)
+    y compara directamente con NombreDiagnostico.
     """
     print("=" * 60)
     print("📊 EVALUACIÓN: MODELO DE ENFERMEDAD vs. DIAGNÓSTICOS REALES")
     print("=" * 60)
 
-    # Filtrar registros con DxSindromatico mapeado
-    mapped_dx = set(SINDROMATIC_TO_SYMPTOMS.keys())
-    df_eval = df_urgencias[df_urgencias['DxSindromatico'].isin(mapped_dx)].copy()
+    mapped_dx = set(SINDROMATICO_A_SINTOMAS.keys())
+    df_eval   = df_urgencias[df_urgencias['DxSindromatico'].isin(mapped_dx)].copy()
 
     if len(df_eval) > sample_size:
         df_eval = df_eval.sample(n=sample_size, random_state=42)
@@ -44,54 +39,47 @@ def evaluate_disease_on_hospital_data(pipeline, df_urgencias, sample_size=500):
 
     results = []
     for _, row in df_eval.iterrows():
-        dx = row['DxSindromatico']
-        symptoms = SINDROMATIC_TO_SYMPTOMS.get(dx, [])
+        dx       = row['DxSindromatico']
+        sintomas = SINDROMATICO_A_SINTOMAS.get(dx, [])
 
-        if not symptoms:
+        if not sintomas:
             continue
 
-        # Predecir
-        predictions = pipeline.predict_disease(symptoms)
-        real_dx = row['NombreDiagnostico']
+        predictions = pipeline.predict_enfermedad(sintomas)
+        real_dx     = row['NombreDiagnostico'].lower()
 
-        # Verificar coincidencia
-        match = False
-        for pred in predictions:
-            if pred['disease_es'] != "No mapeado":
-                if pred['disease_es'].lower() in real_dx.lower():
-                    match = True
-                    break
+        # Comparar directamente en español (ambas fuentes ya están en español)
+        match = any(
+            pred['enfermedad'].lower() in real_dx or real_dx in pred['enfermedad'].lower()
+            for pred in predictions
+        )
 
         results.append({
-            'dx_sindromatico': dx,
-            'real_diagnostico': real_dx,
-            'predicted_top1': predictions[0]['disease_en'],
-            'predicted_top1_es': predictions[0]['disease_es'],
-            'confidence_top1': predictions[0]['confidence'],
-            'match': match,
-            'triage_real': row['Triage'],
+            'dx_sindromatico':  dx,
+            'real_diagnostico': row['NombreDiagnostico'],
+            'predicted_top1':   predictions[0]['enfermedad'],
+            'confidence_top1':  predictions[0]['confidence'],
+            'match':            match,
+            'triaje_real':      row['Triaje'],
         })
 
-    df_results = pd.DataFrame(results)
-
-    # Métricas
-    match_rate = df_results['match'].mean() * 100
+    df_results  = pd.DataFrame(results)
+    match_rate  = df_results['match'].mean() * 100 if len(df_results) > 0 else 0
     print(f"\n📊 Resultados de la evaluación:")
     print(f"   Tasa de coincidencia (top-3): {match_rate:.1f}%")
     print(f"   Total evaluados: {len(df_results)}")
-    print(f"   Coincidencias: {df_results['match'].sum()}")
-    print(f"   No coincidentes: {(~df_results['match']).sum()}")
+    print(f"   Coincidencias:   {df_results['match'].sum()}")
 
     return df_results
 
 
-def evaluate_triage_accuracy(pipeline, df_urgencias, sample_size=1000):
+def evaluar_triaje_accuracy(pipeline, df_urgencias, sample_size=1000):
     """Evalúa el modelo de triaje contra los datos reales."""
     print(f"\n{'=' * 60}")
     print("📊 EVALUACIÓN: MODELO DE TRIAJE vs. TRIAJE REAL")
     print("=" * 60)
 
-    mapped_dx = set(SINDROMATIC_TO_SYMPTOMS.keys())
+    mapped_dx = set(SINDROMATICO_A_SINTOMAS.keys())
     df_eval = df_urgencias[df_urgencias['DxSindromatico'].isin(mapped_dx)].copy()
 
     if len(df_eval) > sample_size:
@@ -105,20 +93,20 @@ def evaluate_triage_accuracy(pipeline, df_urgencias, sample_size=1000):
 
     for _, row in df_eval.iterrows():
         try:
-            result = pipeline.predict_triage(
+            result = pipeline.predict_triaje(
                 dx_sindromatico=row['DxSindromatico'],
                 sexo=row['Sexo'],
                 edad=row['Edad'],
                 grupo_etario=row['GrupoEtario1'],
                 unidad=row['Unidad']
             )
-            pred_triage = result['triage']
-            real_triage = row['Triage']
+            pred_triaje = result['triaje']
+            real_triaje = row['Triage']  # columna real en el Excel
 
-            y_true.append(real_triage)
-            y_pred.append(pred_triage)
+            y_true.append(real_triaje)
+            y_pred.append(pred_triaje)
 
-            if pred_triage == real_triage:
+            if pred_triaje == real_triaje:
                 correct += 1
         except Exception as e:
             continue
@@ -138,7 +126,7 @@ def evaluate_triage_accuracy(pipeline, df_urgencias, sample_size=1000):
     return y_true, y_pred
 
 
-def plot_evaluation_results(df_results, y_true_triage, y_pred_triage):
+def plot_evaluacion_resultados(df_results, y_true_triaje, y_pred_triaje):
     """Genera visualizaciones de la evaluación."""
     os.makedirs(OUTPUTS_DIR, exist_ok=True)
 
@@ -168,10 +156,10 @@ def plot_evaluation_results(df_results, y_true_triage, y_pred_triage):
         axes[0, 1].legend()
 
     # 3. Matriz de confusión del triaje
-    if y_true_triage and y_pred_triage:
+    if y_true_triaje and y_pred_triaje:
         from sklearn.metrics import confusion_matrix
-        labels = sorted(set(y_true_triage + y_pred_triage))
-        cm = confusion_matrix(y_true_triage, y_pred_triage, labels=labels)
+        labels = sorted(set(y_true_triaje + y_pred_triaje))
+        cm = confusion_matrix(y_true_triaje, y_pred_triaje, labels=labels)
         sns.heatmap(cm, annot=True, fmt='d', cmap='Blues', ax=axes[1, 0],
                    xticklabels=[f'T{l}' for l in labels],
                    yticklabels=[f'T{l}' for l in labels])
@@ -180,8 +168,8 @@ def plot_evaluation_results(df_results, y_true_triage, y_pred_triage):
         axes[1, 0].set_title('Matriz de Confusión - Triaje (Datos Reales)', fontweight='bold')
 
     # 4. Error en triaje
-    if y_true_triage and y_pred_triage:
-        errors = np.array(y_pred_triage) - np.array(y_true_triage)
+    if y_true_triaje and y_pred_triaje:
+        errors = np.array(y_pred_triaje) - np.array(y_true_triaje)
         axes[1, 1].hist(errors, bins=range(-4, 5), color='#e67e22', edgecolor='white',
                        alpha=0.85, align='left')
         axes[1, 1].set_xlabel('Error (Predicho - Real)')
@@ -206,20 +194,20 @@ if __name__ == "__main__":
 
     # Cargar datos de urgencias
     df_urgencias = pd.read_excel(MORBILIDAD_XLSX)
-    df_urgencias = df_urgencias[~df_urgencias['Triage'].isin(TRIAGE_EXCLUDE)]
+    df_urgencias = df_urgencias[~df_urgencias['Triage'].isin(TRIAJE_EXCLUIDO)]
     print(f"📂 Dataset de urgencias: {len(df_urgencias):,} registros")
 
     # Evaluar modelo de enfermedad
-    df_disease_results = evaluate_disease_on_hospital_data(pipeline, df_urgencias)
+    df_enfermedad_results = evaluar_enfermedad_en_datos_hospital(pipeline, df_urgencias)
 
     # Evaluar modelo de triaje
-    y_true, y_pred = evaluate_triage_accuracy(pipeline, df_urgencias)
+    y_true, y_pred = evaluar_triaje_accuracy(pipeline, df_urgencias)
 
     # Visualizar
-    plot_evaluation_results(df_disease_results, y_true, y_pred)
+    plot_evaluacion_resultados(df_enfermedad_results, y_true, y_pred)
 
     # Guardar resultados
-    df_disease_results.to_csv(os.path.join(OUTPUTS_DIR, 'disease_evaluation_results.csv'), index=False)
+    df_enfermedad_results.to_csv(os.path.join(OUTPUTS_DIR, 'enfermedad_evaluation_results.csv'), index=False)
     print(f"\n💾 Resultados detallados guardados en {OUTPUTS_DIR}/")
 
     print(f"\n{'=' * 60}")
