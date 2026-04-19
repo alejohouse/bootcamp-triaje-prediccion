@@ -14,29 +14,32 @@ import sys
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from src.config import (
-    DISEASES_CSV, MORBILIDAD_XLSX, MODELS_DIR, OUTPUTS_DIR,
-    RANDOM_STATE, TEST_SIZE, TRIAGE_EXCLUDE, SINDROMATIC_TO_SYMPTOMS
+    ENFERMEDAD_XLSX, MORBILIDAD_XLSX, MODELS_DIR, OUTPUTS_DIR,
+    RANDOM_STATE, TEST_SIZE, TRIAJE_EXCLUIDO, SINDROMATICO_A_SINTOMAS
 )
 
 
-def load_diseases_dataset():
-    """Carga y preprocesa el dataset de enfermedades y síntomas."""
+def load_enfermedad_dataset():
+    """Carga y preprocesa el dataset de enfermedades y síntomas (xlsx en español)."""
     print("📂 Cargando dataset de enfermedades y síntomas...")
-    df = pd.read_csv(DISEASES_CSV)
+    df = pd.read_excel(ENFERMEDAD_XLSX)
     print(f"   Dimensiones: {df.shape}")
 
-    symptom_cols = df.columns[1:].tolist()
+    # Normalizar nombres de enfermedades (evitar duplicados por capitalización)
+    df['enfermedad'] = df['enfermedad'].str.strip().str.lower()
+
+    sintoma_cols = df.columns[1:].tolist()
 
     # Eliminar síntomas con varianza muy baja (< 0.005)
-    variances = df[symptom_cols].var()
-    low_var_cols = variances[variances < 0.005].index.tolist()
-    high_var_cols = [c for c in symptom_cols if c not in low_var_cols]
+    varianza = df[sintoma_cols].var()
+    var_baja_cols = varianza[varianza < 0.005].index.tolist()
+    var_alta_cols = [c for c in sintoma_cols if c not in var_baja_cols]
 
-    print(f"   Síntomas originales: {len(symptom_cols)}")
-    print(f"   Síntomas eliminados (varianza < 0.005): {len(low_var_cols)}")
-    print(f"   Síntomas útiles: {len(high_var_cols)}")
+    print(f"   Síntomas originales: {len(sintoma_cols)}")
+    print(f"   Síntomas eliminados (varianza < 0.005): {len(var_baja_cols)}")
+    print(f"   Síntomas útiles: {len(var_alta_cols)}")
 
-    return df, high_var_cols, low_var_cols
+    return df, var_alta_cols, var_baja_cols
 
 
 def load_morbilidad_dataset():
@@ -46,9 +49,9 @@ def load_morbilidad_dataset():
     original_len = len(df)
 
     # Excluir triaje 0 y 5
-    df = df[~df['Triage'].isin(TRIAGE_EXCLUDE)].copy()
+    df = df[~df['Triage'].isin(TRIAJE_EXCLUIDO)].copy()
     print(f"   Registros originales: {original_len:,}")
-    print(f"   Registros después de excluir triaje {TRIAGE_EXCLUDE}: {len(df):,}")
+    print(f"   Registros después de excluir triaje {TRIAJE_EXCLUIDO}: {len(df):,}")
 
     return df
 
@@ -76,24 +79,24 @@ def encode_morbilidad_features(df):
     return df_encoded, encoders
 
 
-def prepare_disease_data(df, symptom_cols):
+def prepare_enfermedad_data(df, sintoma_cols):
     """Prepara datos para el modelo de predicción de enfermedad."""
     print("\n📊 Preparando datos para el modelo de ENFERMEDAD...")
 
-    # Filtrar enfermedades con menos de 5 muestras (no se pueden estratificar)
-    disease_counts = df['diseases'].value_counts()
-    valid_diseases = disease_counts[disease_counts >= 5].index
-    df_filtered = df[df['diseases'].isin(valid_diseases)].copy()
+    # Filtrar enfermedades con menos de 5 muestras
+    enfermedad_counts = df['enfermedad'].value_counts()
+    valid_enfermedades = enfermedad_counts[enfermedad_counts >= 5].index
+    df_filtered = df[df['enfermedad'].isin(valid_enfermedades)].copy()
     removed = len(df) - len(df_filtered)
-    print(f"   Enfermedades con <5 muestras eliminadas: {len(disease_counts) - len(valid_diseases)} ({removed} registros)")
-    print(f"   Enfermedades válidas: {len(valid_diseases)}")
+    print(f"   Enfermedades con <5 muestras eliminadas: {len(enfermedad_counts) - len(valid_enfermedades)} ({removed} registros)")
+    print(f"   Enfermedades válidas: {len(valid_enfermedades)}")
 
-    X = df_filtered[symptom_cols].values
-    y = df_filtered['diseases'].values
+    X = df_filtered[sintoma_cols].values
+    y = df_filtered['enfermedad'].values
 
     # Label encoding para enfermedades
-    le_disease = LabelEncoder()
-    y_encoded = le_disease.fit_transform(y)
+    le_enfermedad = LabelEncoder()
+    y_encoded = le_enfermedad.fit_transform(y)
 
     # Split estratificado
     X_train, X_test, y_train, y_test = train_test_split(
@@ -101,16 +104,22 @@ def prepare_disease_data(df, symptom_cols):
     )
 
     print(f"   X_train: {X_train.shape}, X_test: {X_test.shape}")
-    print(f"   Clases: {len(le_disease.classes_)}")
+    print(f"   Clases: {len(le_enfermedad.classes_)}")
+
+    # Aplicar SMOTE para balancear clases desbalanceadas
+    print("\n   🔄 Aplicando SMOTE para balanceo de enfermedades...")
+    smote = SMOTE(random_state=RANDOM_STATE, k_neighbors=3)
+    X_train_bal, y_train_bal = smote.fit_resample(X_train, y_train)
+    print(f"   X_train después de SMOTE: {X_train_bal.shape}")
 
     # Guardar encoder
     os.makedirs(MODELS_DIR, exist_ok=True)
-    joblib.dump(le_disease, os.path.join(MODELS_DIR, 'disease_label_encoder.pkl'))
+    joblib.dump(le_enfermedad, os.path.join(MODELS_DIR, 'enfermedad_label_encoder.pkl'))
 
-    return X_train, X_test, y_train, y_test, le_disease
+    return X_train_bal, X_test, y_train_bal, y_test, le_enfermedad
 
 
-def prepare_triage_data(df_encoded):
+def prepare_triaje_data(df_encoded):
     """Prepara datos para el modelo de predicción de triaje."""
     print("\n📊 Preparando datos para el modelo de TRIAJE...")
 
@@ -150,20 +159,20 @@ def prepare_triage_data(df_encoded):
     X_test_scaled = scaler.transform(X_test)
 
     # Guardar scaler
-    joblib.dump(scaler, os.path.join(MODELS_DIR, 'triage_scaler.pkl'))
+    joblib.dump(scaler, os.path.join(MODELS_DIR, 'triaje_scaler.pkl'))
 
     return X_train_scaled, X_test_scaled, y_train_bal, y_test, scaler
 
 
-def dx_to_symptom_vector(dx_sindromatico, symptom_columns):
+def dx_to_sintoma_vector(dx_sindromatico, sintoma_columns):
     """Convierte un DxSindromatico a un vector binario de síntomas."""
-    vector = np.zeros(len(symptom_columns))
+    vector = np.zeros(len(sintoma_columns))
 
-    if dx_sindromatico in SINDROMATIC_TO_SYMPTOMS:
-        symptoms = SINDROMATIC_TO_SYMPTOMS[dx_sindromatico]
-        for symptom in symptoms:
-            if symptom in symptom_columns:
-                idx = symptom_columns.index(symptom)
+    if dx_sindromatico in SINDROMATICO_A_SINTOMAS:
+        sintomas = SINDROMATICO_A_SINTOMAS[dx_sindromatico]
+        for sintoma in sintomas:
+            if sintoma in sintoma_columns:
+                idx = sintoma_columns.index(sintoma)
                 vector[idx] = 1
 
     return vector
@@ -175,31 +184,20 @@ if __name__ == "__main__":
     print("=" * 60)
 
     # 1. Dataset de enfermedades
-    df_diseases, symptom_cols, low_var = load_diseases_dataset()
-    X_train_d, X_test_d, y_train_d, y_test_d, le_disease = prepare_disease_data(
-        df_diseases, symptom_cols
+    df_enfermedades, sintoma_cols, baja_var = load_enfermedad_dataset()
+    X_train_e, X_test_e, y_train_e, y_test_e, le_enfermedad = prepare_enfermedad_data(
+        df_enfermedades, sintoma_cols
     )
 
-    # Guardar columnas de síntomas útiles
-    joblib.dump(symptom_cols, os.path.join(MODELS_DIR, 'symptom_columns.pkl'))
+    # Guardar columnas de síntomas útiles y encoder
+    os.makedirs(MODELS_DIR, exist_ok=True)
+    joblib.dump(sintoma_cols, os.path.join(MODELS_DIR, 'sintoma_columns.pkl'))
+    print(f"   💾 symptom_columns guardado en {MODELS_DIR}/sintoma_columns.pkl")
 
     # 2. Dataset de morbilidad
     df_morb = load_morbilidad_dataset()
     df_morb_encoded, encoders = encode_morbilidad_features(df_morb)
-    X_train_t, X_test_t, y_train_t, y_test_t, scaler = prepare_triage_data(df_morb_encoded)
-
-    # Guardar datos preparados
-    os.makedirs(OUTPUTS_DIR, exist_ok=True)
-    np.savez(
-        os.path.join(OUTPUTS_DIR, 'disease_data.npz'),
-        X_train=X_train_d, X_test=X_test_d,
-        y_train=y_train_d, y_test=y_test_d
-    )
-    np.savez(
-        os.path.join(OUTPUTS_DIR, 'triage_data.npz'),
-        X_train=X_train_t, X_test=X_test_t,
-        y_train=y_train_t, y_test=y_test_t
-    )
+    X_train_t, X_test_t, y_train_t, y_test_t, scaler = prepare_triaje_data(df_morb_encoded)
 
     print("\n" + "=" * 60)
     print("✅ DATOS PREPARADOS Y GUARDADOS")

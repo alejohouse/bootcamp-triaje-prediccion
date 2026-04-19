@@ -13,8 +13,8 @@ import sys
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from src.config import (
-    SINDROMATIC_TO_SYMPTOMS, DISEASE_TO_DIAGNOSTICO,
-    TRIAGE_LABELS, MODELS_DIR
+    SINDROMATICO_A_SINTOMAS,
+    TRIAJE_LABELS, MODELS_DIR
 )
 from src.pipeline import MedicalPredictionPipeline
 
@@ -124,7 +124,7 @@ def load_pipeline():
     return MedicalPredictionPipeline()
 
 
-def get_triage_color(level):
+def get_triaje_color(level):
     """Retorna el color CSS para el nivel de triaje."""
     colors = {
         1: ('#e74c3c', '🔴'),
@@ -144,9 +144,17 @@ def main():
     st.markdown('<p class="hero-subtitle">Sistema de predicción de enfermedad y nivel de triaje basado en Machine Learning</p>', unsafe_allow_html=True)
 
     # Verificar que los modelos existen
-    if not os.path.exists(os.path.join(MODELS_DIR, 'disease_model.pkl')):
+    modelos_requeridos = ['enfermedad_model.pkl', 'triaje_model.pkl']
+    modelos_faltantes = [m for m in modelos_requeridos
+                         if not os.path.exists(os.path.join(MODELS_DIR, m))]
+    if modelos_faltantes:
         st.error("⚠️ Los modelos no han sido entrenados. Ejecuta primero:")
-        st.code("python src/data_preparation.py\npython src/model_disease.py\npython src/model_triage.py")
+        st.code(
+            "python src/data_preparation.py\n"
+            "python src/models.py --tipo enfermedad\n"
+            "python src/models.py --tipo triaje"
+        )
+        st.info(f"Modelos faltantes: {', '.join(modelos_faltantes)}")
         return
 
     pipeline = load_pipeline()
@@ -187,54 +195,54 @@ def main():
         st.markdown("---")
         st.markdown("## 🩺 Síntomas del Paciente")
 
-        # Organizar síntomas por categoría
+        # Síntomas organizados por categoría (en español)
         symptom_categories = {
             "🫀 Cardiovascular / Respiratorio": [
-                "sharp chest pain", "chest tightness", "shortness of breath",
-                "palpitations", "irregular heartbeat", "breathing fast", "cough",
+                "dolor agudo en el pecho", "opresión en el pecho", "dificultad para respirar",
+                "palpitaciones", "arritmia", "respirando rápido", "toser expectorando",
             ],
             "🧠 Neurológico": [
-                "headache", "dizziness", "fainting", "seizures",
-                "abnormal involuntary movements", "insomnia",
+                "dolor de cabeza", "mareo", "desmayo", "convulsiones",
+                "movimientos involuntarios anormales", "insomnio",
             ],
             "🤢 Gastrointestinal": [
-                "sharp abdominal pain", "nausea", "vomiting", "diarrhea",
-                "abdominal distention", "flatulence", "blood in stool",
+                "dolor abdominal agudo", "náuseas", "vómitos", "diarrea",
+                "distensión abdominal", "flatulencia", "sangre en las heces",
             ],
             "🤒 Sistémico": [
-                "fever", "chills", "ache all over",
-                "swollen lymph nodes", "feeling ill",
+                "fiebre", "escalofríos", "dolor por todas partes",
+                "ganglios linfáticos inflamados", "sentirse mal",
             ],
             "👃 Oído / Nariz / Garganta": [
-                "sore throat", "throat swelling", "nasal congestion",
-                "hoarse voice", "ear pain", "diminished hearing", "nosebleed",
+                "dolor de garganta", "amígdalas inflamadas o enrojecidas", "congestión sinusal",
+                "voz ronca", "dolor de oído", "zumbido en el oído", "hemorragia nasal",
             ],
             "🦴 Musculoesquelético": [
-                "low back pain", "back pain", "leg pain", "hip pain",
-                "arm pain", "swelling",
+                "lumbalgia", "dolor de espalda", "dolor en la pierna", "dolor de cadera",
+                "dolor en el brazo", "hinchazón de espalda",
             ],
             "🔬 Urológico / Genital": [
-                "painful urination", "frequent urination", "suprapubic pain",
-                "retention of urine",
+                "micción dolorosa", "micción frecuente", "dolor suprapúbico",
+                "retención de orina",
             ],
             "🧠 Psicológico": [
-                "anxiety and nervousness", "depression",
-                "depressive or psychotic symptoms", "hostile behavior",
+                "ansiedad y nerviosismo", "depresión",
+                "síntomas depresivos o psicóticos", "comportamiento hostil",
             ],
             "🩹 Piel / Heridas": [
-                "skin lesion", "skin rash", "bleeding or discharge from wound",
+                "lesión cutánea", "erupción cutánea", "descarga",
             ],
         }
 
-        selected_symptoms = []
+        sintomas_seleccionados = []
         for category, symptoms in symptom_categories.items():
             with st.expander(category):
                 for symptom in symptoms:
                     if st.checkbox(symptom, key=f"symptom_{symptom}"):
-                        selected_symptoms.append(symptom)
+                        sintomas_seleccionados.append(symptom)
 
         st.markdown("---")
-        n_selected = len(selected_symptoms)
+        n_selected = len(sintomas_seleccionados)
         if n_selected > 0:
             st.success(f"✅ {n_selected} síntomas seleccionados")
         else:
@@ -243,7 +251,7 @@ def main():
     # ============================================================
     # CONTENIDO PRINCIPAL
     # ============================================================
-    if len(selected_symptoms) == 0:
+    if len(sintomas_seleccionados) == 0:
         # Pantalla de inicio
         col1, col2, col3 = st.columns(3)
         with col1:
@@ -288,7 +296,7 @@ def main():
     # ============================================================
     with st.spinner("🔄 Analizando síntomas..."):
         result = pipeline.predict_full(
-            symptoms_list=selected_symptoms,
+            sintomas_list=sintomas_seleccionados,
             sexo=sexo,
             edad=edad,
             grupo_etario=grupo_etario,
@@ -298,27 +306,27 @@ def main():
     # --- Resultados ---
     st.markdown("---")
 
-    col_triage, col_disease = st.columns([1, 2])
+    col_triaje, col_enfermedad = st.columns([1, 2])
 
     # --- TRIAJE ---
-    with col_triage:
+    with col_triaje:
         st.markdown("### 🚨 Nivel de Triaje")
-        triage_level = result['triage']['triage']
-        triage_desc = result['triage']['description']
-        color, emoji = get_triage_color(triage_level)
+        triaje_level = result['triaje']['triaje']
+        triaje_desc = result['triaje']['descripción']
+        color, emoji = get_triaje_color(triaje_level)
 
         st.markdown(f"""
-        <div class="triage-card triage-{triage_level}">
+        <div class="triage-card triage-{triaje_level}">
             <div style="font-size: 3rem;">{emoji}</div>
-            <div style="font-size: 2.5rem; font-weight: 700;">Nivel {triage_level}</div>
-            <div style="font-size: 1.2rem; margin-top: 0.5rem;">{triage_desc}</div>
+            <div style="font-size: 2.5rem; font-weight: 700;">Nivel {triaje_level}</div>
+            <div style="font-size: 1.2rem; margin-top: 0.5rem;">{triaje_desc}</div>
         </div>
         """, unsafe_allow_html=True)
 
         # Gauge chart para triaje
         fig_gauge = go.Figure(go.Indicator(
             mode="gauge+number",
-            value=triage_level,
+            value=triaje_level,
             domain={'x': [0, 1], 'y': [0, 1]},
             title={'text': "Prioridad de Atención", 'font': {'color': 'white'}},
             number={'font': {'color': 'white'}},
@@ -349,10 +357,10 @@ def main():
         """)
 
     # --- ENFERMEDADES PREDICHAS ---
-    with col_disease:
+    with col_enfermedad:
         st.markdown("### 🧬 Enfermedades Probables (Top 3)")
 
-        predictions = result['disease_predictions']
+        predictions = result['enfermedad_predictions']
 
         for i, pred in enumerate(predictions):
             confidence_pct = pred['confidence'] * 100
@@ -364,7 +372,7 @@ def main():
                     <div>
                         <span style="color: {bar_color}; font-size: 1.5rem; font-weight: 700;">#{i+1}</span>
                         <span style="color: #e2e8f0; font-size: 1.1rem; font-weight: 600; margin-left: 0.5rem;">
-                            {pred['disease_en'].title()}
+                            {pred['enfermedad'].title()}
                         </span>
                     </div>
                     <span style="color: {bar_color}; font-size: 1.3rem; font-weight: 700;">
@@ -377,9 +385,6 @@ def main():
                                     transition: width 0.5s ease;"></div>
                     </div>
                 </div>
-                <div style="color: #a0aec0; font-size: 0.85rem; margin-top: 0.3rem;">
-                    🇪🇸 {pred['disease_es']}
-                </div>
             </div>
             """, unsafe_allow_html=True)
 
@@ -387,7 +392,7 @@ def main():
         fig_conf = go.Figure(data=[
             go.Bar(
                 x=[p['confidence'] * 100 for p in predictions],
-                y=[p['disease_en'].title() for p in predictions],
+                y=[p['enfermedad'].title() for p in predictions],
                 orientation='h',
                 marker_color=['#3a7bd5', '#00d2ff', '#7c4dff'][:len(predictions)],
                 text=[f"{p['confidence']*100:.1f}%" for p in predictions],
@@ -414,7 +419,7 @@ def main():
 
     with col_s1:
         st.markdown("**Síntomas reportados:**")
-        for s in selected_symptoms:
+        for s in sintomas_seleccionados:
             st.markdown(f"- ✅ {s}")
 
     with col_s2:
