@@ -15,6 +15,7 @@ models/*.joblib
 # Datos grandes
 insumos/Final_Augmented_dataset_Diseases_and_Symptoms.csv
 insumos/registro_procedimientos_medicos_diagnosticos_2019.csv
+insumos/sintomas_vs_enfermedades.xlsx
 
 # Outputs grandes
 outputs/*.npz
