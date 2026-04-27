@@ -21,6 +21,8 @@ from sklearn.ensemble import (
     RandomForestClassifier,
 )
 from sklearn.linear_model import LogisticRegression
+from xgboost import XGBClassifier
+from imblearn.over_sampling import SMOTE
 from sklearn.metrics import (
     accuracy_score,
     classification_report,
@@ -31,7 +33,7 @@ from sklearn.metrics import (
 from sklearn.preprocessing import StandardScaler
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from src.config import LR_PARAMS, MODELS_DIR, OUTPUTS_DIR, RANDOM_STATE, RF_PARAMS
+from src.config import LR_PARAMS, MODELS_DIR, OUTPUTS_DIR, RANDOM_STATE, RF_PARAMS, XGB_PARAMS
 
 
 # ============================================================
@@ -135,9 +137,9 @@ def guardar_modelo(modelo, nombre_modelo, prefijo, scaler=None):
 
 def plot_comparison(resultados, output_path):
     """Gráfico comparativo de Accuracy, F1 ponderado y Tiempo (genérico)."""
-    fig, axes = plt.subplots(1, 3, figsize=(18, 5))
+    fig, axes = plt.subplots(1, 3, figsize=(20, 5))
     nombres = list(resultados.keys())
-    colores = ['#3498db', '#2ecc71', '#e74c3c', '#9b59b6']
+    colores = ['#3498db', '#2ecc71', '#e74c3c', '#9b59b6', '#f39c12', '#1abc9c']
 
     # --- Accuracy ---
     accs = [resultados[n]['accuracy'] for n in nombres]
@@ -207,7 +209,8 @@ def _run_enfermedad():
     # Guardar columnas de síntomas para el pipeline
     joblib.dump(sintomas_cols, os.path.join(MODELS_DIR, 'sintomas_columns.pkl'))
 
-    # Scaler solo para Logistic Regression (los árboles no lo necesitan)
+    # Nota: data_preparation.py ya aplica SMOTE internamente (975 muestras/clase).
+    # Scaler solo para Logistic Regression; árboles y XGBoost no lo necesitan.
     scaler     = StandardScaler()
     X_train_sc = scaler.fit_transform(X_train)
     X_test_sc  = scaler.transform(X_test)
@@ -228,9 +231,19 @@ def _run_enfermedad():
             LogisticRegression(**LR_PARAMS),
             X_train_sc, X_test_sc,
         ),
+        "XGBoost": (
+            XGBClassifier(
+                **XGB_PARAMS,
+                use_label_encoder=False,
+                tree_method='hist',
+                device='cpu',
+            ),
+            X_train, X_test,
+        ),
     }
 
     resultados   = entrenar_y_comparar(modelos_config, y_train, y_test)
+
     mejor_nombre, mejor_modelo = seleccionar_mejor_modelo(resultados)
 
     # Guardar modelo (y scaler solo si ganó Logistic Regression)
@@ -302,40 +315,57 @@ def _run_triaje():
     df_morb_encoded, _  = encode_morbilidad_features(df_morb)
     X_train, X_test, y_train, y_test, _ = prepare_triaje_data(df_morb_encoded)
 
-    # Los datos ya vienen escalados desde prepare_triaje_data;
-    # todos los modelos usan el mismo X_train / X_test.
+    # ── SMOTE: equilibrar clases minoritarias (Nivel 1=26, Nivel 2=895) ────
+    print("\n⚖️  Aplicando SMOTE al conjunto de entrenamiento...")
+    dist_orig = dict(pd.Series(y_train).value_counts().sort_index())
+    print(f"   Distribución original por nivel: {dist_orig}")
+    smote = SMOTE(random_state=RANDOM_STATE, k_neighbors=5)
+    X_train_sm, y_train_sm = smote.fit_resample(X_train, y_train)
+    dist_sm = dict(pd.Series(y_train_sm).value_counts().sort_index())
+    print(f"   Distribución después de SMOTE:   {dist_sm}")
+    print(f"   Muestras antes: {len(y_train):,}  →  después: {len(y_train_sm):,}")
+
     modelos_config = {
         "Random Forest": (
             RandomForestClassifier(
                 n_estimators=200, max_depth=15, min_samples_split=5,
-                class_weight='balanced', random_state=RANDOM_STATE, n_jobs=-1,
+                random_state=RANDOM_STATE, n_jobs=-1,
             ),
-            X_train, X_test,
+            X_train_sm, X_test,
         ),
         "Extra Trees": (
             ExtraTreesClassifier(
                 n_estimators=200, max_depth=15, min_samples_split=5,
-                class_weight='balanced', random_state=RANDOM_STATE, n_jobs=-1,
+                random_state=RANDOM_STATE, n_jobs=-1,
             ),
-            X_train, X_test,
+            X_train_sm, X_test,
         ),
         "Gradient Boosting": (
             GradientBoostingClassifier(
                 n_estimators=150, max_depth=6, learning_rate=0.1,
                 random_state=RANDOM_STATE,
             ),
-            X_train, X_test,
+            X_train_sm, X_test,
         ),
         "Logistic Regression": (
             LogisticRegression(
                 **LR_PARAMS,
                 class_weight='balanced',
             ),
-            X_train, X_test,
+            X_train_sm, X_test,
+        ),
+        "XGBoost": (
+            XGBClassifier(
+                **XGB_PARAMS,
+                use_label_encoder=False,
+                tree_method='hist',
+                device='cpu',
+            ),
+            X_train_sm, X_test,
         ),
     }
 
-    resultados   = entrenar_y_comparar(modelos_config, y_train, y_test)
+    resultados   = entrenar_y_comparar(modelos_config, y_train_sm, y_test)
     mejor_nombre, mejor_modelo = seleccionar_mejor_modelo(resultados)
 
     guardar_modelo(mejor_modelo, mejor_nombre, prefijo='triaje')

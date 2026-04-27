@@ -336,8 +336,10 @@ XGB_PARAMS = {
 
 # REGRESIÓN LOGÍSTICA
 LR_PARAMS = {
-    "max_iter": 1000,
+    "max_iter": 300,
     "C": 1.0,
-    "solver": "lbfgs",
+    "solver": "saga",      # saga es mucho más rápido para datasets grandes (>100k)
     "random_state": RANDOM_STATE,
+    "n_jobs": -1,
 }
+

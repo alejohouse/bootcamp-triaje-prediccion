@@ -33,83 +33,216 @@ st.set_page_config(
 # ============================================================
 st.markdown("""
 <style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
 
-    .main { font-family: 'Inter', sans-serif; }
-
-    .stApp {
-        background: linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #24243e 100%);
+    /* ── Base ── */
+    html, body, .main, .stApp {
+        font-family: 'Inter', sans-serif;
+        background-color: #f7fafd !important;
+        color: #1a2744;
     }
 
+    /* ── Header hero ── */
+    .hero-wrapper {
+        background: linear-gradient(120deg, #1a6fbd 0%, #2a9df4 60%, #56c0f7 100%);
+        border-radius: 20px;
+        padding: 2.2rem 2rem 1.8rem;
+        margin-bottom: 1.8rem;
+        box-shadow: 0 6px 30px rgba(26,111,189,0.18);
+    }
     .hero-title {
-        font-size: 2.5rem;
-        font-weight: 700;
-        background: linear-gradient(120deg, #00d2ff, #3a7bd5, #00d2ff);
-        background-size: 200% auto;
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
+        font-size: 2.2rem;
+        font-weight: 800;
+        color: #ffffff;
         text-align: center;
-        margin-bottom: 0.5rem;
-        animation: shine 3s linear infinite;
+        margin: 0 0 0.4rem;
+        letter-spacing: -0.5px;
+        text-shadow: 0 2px 8px rgba(0,0,0,0.12);
     }
-
-    @keyframes shine {
-        to { background-position: 200% center; }
-    }
-
     .hero-subtitle {
-        font-size: 1.1rem;
-        color: #a0aec0;
+        font-size: 1rem;
+        color: rgba(255,255,255,0.88);
         text-align: center;
-        margin-bottom: 2rem;
+        margin: 0;
+        font-weight: 400;
     }
-
-    .triage-card {
-        padding: 1.5rem;
-        border-radius: 16px;
-        text-align: center;
-        font-size: 1.2rem;
+    .hero-badge {
+        display: flex;
+        justify-content: center;
+        gap: 0.8rem;
+        margin-top: 1rem;
+        flex-wrap: wrap;
+    }
+    .hero-badge span {
+        background: rgba(255,255,255,0.2);
+        color: #fff;
+        border-radius: 20px;
+        padding: 0.25rem 0.9rem;
+        font-size: 0.78rem;
         font-weight: 600;
-        margin: 0.5rem 0;
-        box-shadow: 0 8px 32px rgba(0,0,0,0.3);
-        backdrop-filter: blur(10px);
-        border: 1px solid rgba(255,255,255,0.1);
+        letter-spacing: 0.3px;
     }
 
-    .triage-1 { background: linear-gradient(135deg, #e74c3c, #c0392b); color: white; }
-    .triage-2 { background: linear-gradient(135deg, #e67e22, #d35400); color: white; }
-    .triage-3 { background: linear-gradient(135deg, #f1c40f, #f39c12); color: #2c3e50; }
-    .triage-4 { background: linear-gradient(135deg, #2ecc71, #27ae60); color: white; }
-
-    .disease-card {
-        background: rgba(255,255,255,0.05);
-        border: 1px solid rgba(255,255,255,0.1);
-        border-radius: 12px;
-        padding: 1rem;
-        margin: 0.5rem 0;
-        backdrop-filter: blur(10px);
-    }
-
-    .metric-container {
-        background: rgba(255,255,255,0.05);
-        border: 1px solid rgba(255,255,255,0.1);
-        border-radius: 12px;
-        padding: 1.5rem;
-        text-align: center;
-        backdrop-filter: blur(10px);
-    }
-
-    .sidebar .sidebar-content {
-        background: rgba(15, 12, 41, 0.95);
-    }
-
+    /* ── Sidebar fondo ── */
     div[data-testid="stSidebar"] {
-        background: linear-gradient(180deg, #1a1a2e 0%, #16213e 100%);
+        background: linear-gradient(180deg, #f0f8ff 0%, #e3f0fb 100%) !important;
+        border-right: 2px solid #b8d9f5;
+    }
+    /* Solo texto visible — NO aplicar a inputs/widgets internos de React */
+    div[data-testid="stSidebar"] h2,
+    div[data-testid="stSidebar"] h3,
+    div[data-testid="stSidebar"] p,
+    div[data-testid="stSidebar"] label,
+    div[data-testid="stSidebar"] .stMarkdown,
+    div[data-testid="stSidebar"] .stMarkdown p {
+        color: #1a2744 !important;
+    }
+    /* Inputs del sidebar: fondo blanco, texto oscuro legible */
+    div[data-testid="stSidebar"] input,
+    div[data-testid="stSidebar"] textarea,
+    div[data-testid="stSidebar"] select {
+        background-color: #ffffff !important;
+        color: #1a2744 !important;
+        border: 1px solid #a8cff0 !important;
+        border-radius: 8px !important;
+    }
+    div[data-testid="stSidebar"] input:focus,
+    div[data-testid="stSidebar"] textarea:focus {
+        border-color: #1a6fbd !important;
+        box-shadow: 0 0 0 2px rgba(26,111,189,0.15) !important;
+        outline: none !important;
+    }
+    /* Expanders de categorías de síntomas: cabecera azul con texto blanco */
+    div[data-testid="stSidebar"] details {
+        background: #ffffff;
+        border: 1px solid #b8d9f5;
+        border-radius: 10px;
+        margin-bottom: 0.4rem;
+        overflow: hidden;
+    }
+    div[data-testid="stSidebar"] details summary {
+        background: linear-gradient(90deg, #1a6fbd 0%, #2a9df4 100%);
+        color: #ffffff !important;
+        font-weight: 600 !important;
+        font-size: 0.88rem !important;
+        padding: 0.6rem 0.9rem;
+        cursor: pointer;
+        border-radius: 8px;
+        letter-spacing: 0.2px;
+    }
+    div[data-testid="stSidebar"] details summary:hover {
+        background: linear-gradient(90deg, #155fa0 0%, #1a8de0 100%);
+    }
+    div[data-testid="stSidebar"] details summary svg {
+        fill: #ffffff !important;
+        stroke: #ffffff !important;
+    }
+    div[data-testid="stSidebar"] details[open] {
+        border-color: #1a6fbd;
+    }
+    /* Checkboxes dentro del expander */
+    div[data-testid="stSidebar"] details .stCheckbox label {
+        color: #1a2744 !important;
+        font-size: 0.86rem !important;
     }
 
-    .stSelectbox label, .stMultiSelect label, .stNumberInput label, .stRadio label {
-        color: #e2e8f0 !important;
+    /* ── Triage cards ── */
+    .triage-card {
+        padding: 1.5rem 1.2rem;
+        border-radius: 18px;
+        text-align: center;
+        font-size: 1.1rem;
+        font-weight: 700;
+        margin: 0.5rem 0;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.12);
+        border: none;
+    }
+    .triage-1 {
+        background: linear-gradient(135deg, #e53e3e 0%, #c53030 100%);
+        color: #fff;
+    }
+    .triage-2 {
+        background: linear-gradient(135deg, #dd6b20 0%, #c05621 100%);
+        color: #fff;
+    }
+    .triage-3 {
+        background: linear-gradient(135deg, #d69e2e 0%, #b7791f 100%);
+        color: #fff;
+    }
+    .triage-4 {
+        background: linear-gradient(135deg, #38a169 0%, #276749 100%);
+        color: #fff;
+    }
+
+    /* ── Disease cards ── */
+    .disease-card {
+        background: #ffffff;
+        border: 1px solid #d0e8fa;
+        border-left: 4px solid #2a9df4;
+        border-radius: 12px;
+        padding: 1rem 1.1rem;
+        margin: 0.55rem 0;
+        box-shadow: 0 2px 10px rgba(26,111,189,0.07);
+        transition: box-shadow 0.2s;
+    }
+    .disease-card:hover {
+        box-shadow: 0 4px 18px rgba(26,111,189,0.15);
+    }
+
+    /* ── Metric cards ── */
+    .metric-container {
+        background: #ffffff;
+        border: 1px solid #d0e8fa;
+        border-radius: 16px;
+        padding: 1.6rem 1.2rem;
+        text-align: center;
+        box-shadow: 0 2px 14px rgba(26,111,189,0.08);
+    }
+    .metric-container h3 {
+        font-size: 2rem;
+        font-weight: 800;
+        color: #1a6fbd;
+        margin: 0 0 0.3rem;
+    }
+    .metric-container p {
+        color: #4a6080;
+        font-size: 0.9rem;
+        margin: 0;
         font-weight: 500;
+    }
+
+    /* ── Section titles ── */
+    h3 { color: #1a2744 !important; font-weight: 700 !important; }
+
+    /* ── Labels ── */
+    .stSelectbox label, .stMultiSelect label, .stNumberInput label, .stRadio label,
+    .stCheckbox label, .stExpander summary {
+        color: #1a2744 !important;
+        font-weight: 500 !important;
+    }
+
+    /* ── Buttons ── */
+    .stButton > button {
+        background: linear-gradient(120deg, #1a6fbd, #2a9df4);
+        color: #fff;
+        border: none;
+        border-radius: 10px;
+        font-weight: 600;
+        padding: 0.5rem 1.4rem;
+        box-shadow: 0 3px 12px rgba(26,111,189,0.25);
+        transition: all 0.2s;
+    }
+    .stButton > button:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 5px 16px rgba(26,111,189,0.35);
+    }
+
+    /* ── Divider ── */
+    hr { border-color: #d0e8fa !important; }
+
+    /* ── Info / warning boxes ── */
+    .stAlert {
+        border-radius: 10px !important;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -140,8 +273,17 @@ def get_triaje_color(level):
 # ============================================================
 def main():
     # Header
-    st.markdown('<h1 class="hero-title">🏥 Predictor Médico Inteligente</h1>', unsafe_allow_html=True)
-    st.markdown('<p class="hero-subtitle">Sistema de predicción de enfermedad y nivel de triaje basado en Machine Learning</p>', unsafe_allow_html=True)
+    st.markdown("""
+    <div class="hero-wrapper">
+        <div class="hero-title">🏥 Predictor Médico Inteligente</div>
+        <div class="hero-subtitle">Sistema de predicción de enfermedad y nivel de triaje basado en Machine Learning</div>
+        <div class="hero-badge">
+            <span>🧬 Machine Learning</span>
+            <span>🏥 Hospital de Pitalito</span>
+            <span>📊 59 001 registros</span>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
 
     # Verificar que los modelos existen
     modelos_requeridos = ['enfermedad_model.pkl', 'triaje_model.pkl']
@@ -165,6 +307,12 @@ def main():
     with st.sidebar:
         st.markdown("## 👤 Información del Paciente")
         st.markdown("---")
+
+        nombre_paciente = st.text_input(
+            "**Nombre del paciente**",
+            placeholder="Ej: Juan Pérez",
+            help="Nombre identificador del paciente (opcional)"
+        )
 
         sexo = st.radio("**Sexo**", ["Masculino", "Femenino"], horizontal=True)
 
@@ -271,7 +419,7 @@ def main():
         with col3:
             st.markdown("""
             <div class="metric-container">
-                <h3>🏥 59,001</h3>
+                <h3>🏥 59 001</h3>
                 <p>Registros de entrenamiento</p>
             </div>
             """, unsafe_allow_html=True)
@@ -328,18 +476,19 @@ def main():
             mode="gauge+number",
             value=triaje_level,
             domain={'x': [0, 1], 'y': [0, 1]},
-            title={'text': "Prioridad de Atención", 'font': {'color': 'white'}},
-            number={'font': {'color': 'white'}},
+            title={'text': "Prioridad de Atención", 'font': {'color': '#1a2744', 'size': 14}},
+            number={'font': {'color': '#1a2744', 'size': 32}},
             gauge={
-                'axis': {'range': [1, 4], 'tickwidth': 1, 'tickcolor': "white",
-                        'tickfont': {'color': 'white'}},
+                'axis': {'range': [1, 4], 'tickwidth': 1, 'tickcolor': '#4a6080',
+                        'tickfont': {'color': '#4a6080'}},
                 'bar': {'color': color},
-                'bgcolor': 'rgba(0,0,0,0)',
+                'bgcolor': '#f0f6ff',
+                'bordercolor': '#d0e8fa',
                 'steps': [
-                    {'range': [1, 1.5], 'color': 'rgba(231,76,60,0.3)'},
-                    {'range': [1.5, 2.5], 'color': 'rgba(230,126,34,0.3)'},
-                    {'range': [2.5, 3.5], 'color': 'rgba(241,196,15,0.3)'},
-                    {'range': [3.5, 4], 'color': 'rgba(46,204,113,0.3)'},
+                    {'range': [1, 1.5], 'color': 'rgba(229,62,62,0.15)'},
+                    {'range': [1.5, 2.5], 'color': 'rgba(221,107,32,0.15)'},
+                    {'range': [2.5, 3.5], 'color': 'rgba(214,158,46,0.15)'},
+                    {'range': [3.5, 4], 'color': 'rgba(56,161,105,0.15)'},
                 ],
             }
         ))
@@ -348,6 +497,7 @@ def main():
             plot_bgcolor='rgba(0,0,0,0)',
             height=250,
             margin=dict(t=50, b=0, l=30, r=30),
+            font=dict(family='Inter, sans-serif'),
         )
         st.plotly_chart(fig_gauge, use_container_width=True)
 
@@ -364,24 +514,26 @@ def main():
 
         for i, pred in enumerate(predictions):
             confidence_pct = pred['confidence'] * 100
-            bar_color = ['#3a7bd5', '#00d2ff', '#7c4dff'][i]
+            bar_color = ['#1a6fbd', '#2a9df4', '#56c0f7'][i]
 
             st.markdown(f"""
             <div class="disease-card">
                 <div style="display: flex; justify-content: space-between; align-items: center;">
                     <div>
-                        <span style="color: {bar_color}; font-size: 1.5rem; font-weight: 700;">#{i+1}</span>
-                        <span style="color: #e2e8f0; font-size: 1.1rem; font-weight: 600; margin-left: 0.5rem;">
+                        <span style="color: {bar_color}; font-size: 1.4rem; font-weight: 800;">#{i+1}</span>
+                        <span style="color: #1a2744; font-size: 1rem; font-weight: 600; margin-left: 0.6rem;">
                             {pred['enfermedad'].title()}
                         </span>
                     </div>
-                    <span style="color: {bar_color}; font-size: 1.3rem; font-weight: 700;">
+                    <span style="background:{bar_color}; color:#fff; font-size:0.95rem; font-weight:700;
+                                 padding:0.2rem 0.7rem; border-radius:20px;">
                         {confidence_pct:.1f}%
                     </span>
                 </div>
-                <div style="margin-top: 0.5rem;">
-                    <div style="background: rgba(255,255,255,0.1); border-radius: 8px; height: 8px; overflow: hidden;">
-                        <div style="background: {bar_color}; width: {confidence_pct}%; height: 100%; border-radius: 8px;
+                <div style="margin-top: 0.6rem;">
+                    <div style="background: #e8f4fd; border-radius: 8px; height: 7px; overflow: hidden;">
+                        <div style="background: linear-gradient(90deg, {bar_color}, #56c0f7);
+                                    width: {confidence_pct}%; height: 100%; border-radius: 8px;
                                     transition: width 0.5s ease;"></div>
                     </div>
                 </div>
@@ -394,20 +546,22 @@ def main():
                 x=[p['confidence'] * 100 for p in predictions],
                 y=[p['enfermedad'].title() for p in predictions],
                 orientation='h',
-                marker_color=['#3a7bd5', '#00d2ff', '#7c4dff'][:len(predictions)],
+                marker_color=['#1a6fbd', '#2a9df4', '#56c0f7'][:len(predictions)],
                 text=[f"{p['confidence']*100:.1f}%" for p in predictions],
                 textposition='outside',
-                textfont=dict(color='white'),
+                textfont=dict(color='#1a2744'),
             )
         ])
         fig_conf.update_layout(
-            title=dict(text="Confianza de Predicción", font=dict(color='white')),
+            title=dict(text="Confianza de Predicción", font=dict(color='#1a2744', size=14)),
             paper_bgcolor='rgba(0,0,0,0)',
-            plot_bgcolor='rgba(0,0,0,0)',
-            xaxis=dict(title="Confianza (%)", color='white', gridcolor='rgba(255,255,255,0.1)'),
-            yaxis=dict(color='white'),
+            plot_bgcolor='#f7fafd',
+            xaxis=dict(title="Confianza (%)", color='#4a6080',
+                       gridcolor='#d0e8fa', showgrid=True),
+            yaxis=dict(color='#1a2744'),
             height=250,
-            margin=dict(t=50, b=30, l=10, r=50),
+            margin=dict(t=50, b=30, l=10, r=60),
+            font=dict(family='Inter, sans-serif'),
         )
         st.plotly_chart(fig_conf, use_container_width=True)
 
@@ -424,6 +578,8 @@ def main():
 
     with col_s2:
         st.markdown("**Datos del paciente:**")
+        if nombre_paciente:
+            st.markdown(f"- 🏷️ Paciente: **{nombre_paciente}**")
         st.markdown(f"- 👤 Sexo: **{sexo}**")
         st.markdown(f"- 📅 Edad: **{edad} años**")
         st.markdown(f"- 📊 Grupo etario: **{grupo_etario}**")
