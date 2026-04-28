@@ -83,67 +83,95 @@ st.markdown("""
         letter-spacing: 0.3px;
     }
 
-    /* ── Sidebar fondo ── */
-    div[data-testid="stSidebar"] {
+    /* ── Sidebar: forzar fondo claro en TODOS los niveles anidados ── */
+    section[data-testid="stSidebar"],
+    section[data-testid="stSidebar"] > div,
+    section[data-testid="stSidebar"] > div > div,
+    div[data-testid="stSidebar"],
+    div[data-testid="stSidebar"] > div,
+    div[data-testid="stSidebarContent"],
+    div[data-testid="stSidebarUserContent"],
+    div[data-testid="stSidebarUserContent"] > div {
         background: linear-gradient(180deg, #f0f8ff 0%, #e3f0fb 100%) !important;
-        border-right: 2px solid #b8d9f5;
+        background-color: #f0f8ff !important;
     }
-    /* Solo texto visible — NO aplicar a inputs/widgets internos de React */
-    div[data-testid="stSidebar"] h2,
-    div[data-testid="stSidebar"] h3,
-    div[data-testid="stSidebar"] p,
-    div[data-testid="stSidebar"] label,
-    div[data-testid="stSidebar"] .stMarkdown,
-    div[data-testid="stSidebar"] .stMarkdown p {
+    section[data-testid="stSidebar"] {
+        border-right: 2px solid #b8d9f5 !important;
+    }
+
+    /* Texto: legible sobre fondo claro */
+    section[data-testid="stSidebar"] h1,
+    section[data-testid="stSidebar"] h2,
+    section[data-testid="stSidebar"] h3,
+    section[data-testid="stSidebar"] p,
+    section[data-testid="stSidebar"] label,
+    section[data-testid="stSidebar"] .stMarkdown p,
+    section[data-testid="stSidebar"] [data-testid="stMarkdownContainer"] p {
         color: #1a2744 !important;
     }
-    /* Inputs del sidebar: fondo blanco, texto oscuro legible */
-    div[data-testid="stSidebar"] input,
-    div[data-testid="stSidebar"] textarea,
-    div[data-testid="stSidebar"] select {
+
+    /* Inputs text / number: fondo blanco, letra oscura */
+    section[data-testid="stSidebar"] input[type="text"],
+    section[data-testid="stSidebar"] input[type="number"] {
         background-color: #ffffff !important;
         color: #1a2744 !important;
         border: 1px solid #a8cff0 !important;
         border-radius: 8px !important;
+        caret-color: #1a6fbd !important;
     }
-    div[data-testid="stSidebar"] input:focus,
-    div[data-testid="stSidebar"] textarea:focus {
+    section[data-testid="stSidebar"] input:focus {
         border-color: #1a6fbd !important;
-        box-shadow: 0 0 0 2px rgba(26,111,189,0.15) !important;
+        box-shadow: 0 0 0 2px rgba(26,111,189,0.18) !important;
         outline: none !important;
     }
-    /* Expanders de categorías de síntomas: cabecera azul con texto blanco */
-    div[data-testid="stSidebar"] details {
-        background: #ffffff;
-        border: 1px solid #b8d9f5;
-        border-radius: 10px;
-        margin-bottom: 0.4rem;
-        overflow: hidden;
+
+    /* Contenedor interno de widgets BaseWeb (selectbox, number) */
+    section[data-testid="stSidebar"] [data-baseweb="select"] > div,
+    section[data-testid="stSidebar"] [data-baseweb="input"] > div,
+    section[data-testid="stSidebar"] [data-baseweb="base-input"] {
+        background-color: #ffffff !important;
+        border-color: #a8cff0 !important;
+        color: #1a2744 !important;
     }
-    div[data-testid="stSidebar"] details summary {
-        background: linear-gradient(90deg, #1a6fbd 0%, #2a9df4 100%);
+
+    /* Expanders: cabecera azul oscuro con texto blanco para contraste */
+    section[data-testid="stSidebar"] details {
+        background: #ffffff !important;
+        border: 1px solid #b8d9f5 !important;
+        border-radius: 10px !important;
+        margin-bottom: 0.4rem !important;
+        overflow: hidden !important;
+    }
+    section[data-testid="stSidebar"] details summary {
+        background: linear-gradient(90deg, #1a5fa0 0%, #2a9df4 100%) !important;
         color: #ffffff !important;
-        font-weight: 600 !important;
-        font-size: 0.88rem !important;
-        padding: 0.6rem 0.9rem;
-        cursor: pointer;
-        border-radius: 8px;
-        letter-spacing: 0.2px;
+        font-weight: 700 !important;
+        font-size: 0.87rem !important;
+        padding: 0.6rem 0.9rem !important;
+        cursor: pointer !important;
+        letter-spacing: 0.2px !important;
     }
-    div[data-testid="stSidebar"] details summary:hover {
-        background: linear-gradient(90deg, #155fa0 0%, #1a8de0 100%);
+    section[data-testid="stSidebar"] details summary:hover {
+        background: linear-gradient(90deg, #114d87 0%, #1a8de0 100%) !important;
     }
-    div[data-testid="stSidebar"] details summary svg {
+    section[data-testid="stSidebar"] details summary svg,
+    section[data-testid="stSidebar"] details summary path {
         fill: #ffffff !important;
         stroke: #ffffff !important;
     }
-    div[data-testid="stSidebar"] details[open] {
-        border-color: #1a6fbd;
+    section[data-testid="stSidebar"] details[open] {
+        border-color: #1a6fbd !important;
     }
+
     /* Checkboxes dentro del expander */
-    div[data-testid="stSidebar"] details .stCheckbox label {
+    section[data-testid="stSidebar"] details label {
         color: #1a2744 !important;
         font-size: 0.86rem !important;
+    }
+
+    /* Separadores en sidebar */
+    section[data-testid="stSidebar"] hr {
+        border-color: #b8d9f5 !important;
     }
 
     /* ── Triage cards ── */

@@ -1,0 +1,10 @@
+[theme]
+# Tema claro base — evita que Streamlit fuerce fondo oscuro en el sidebar
+base = "light"
+
+# Colores principales de la interfaz
+primaryColor         = "#1a6fbd"
+backgroundColor      = "#f7fafd"
+secondaryBackgroundColor = "#e3f0fb"
+textColor            = "#1a2744"
+font                 = "sans serif"
