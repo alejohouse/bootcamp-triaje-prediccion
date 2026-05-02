@@ -2,7 +2,7 @@
 
 > Sistema de apoyo clínico que predice las **3 enfermedades más probables** y el **nivel de triaje recomendado** a partir de los síntomas reportados por el paciente.
 
-Desarrollado como proyecto académico del Bootcamp de Ciencia de Datos — Hospital de Pitalito (Huila, Colombia).
+Desarrollado como proyecto académico del Bootcamp de Inteligencia Artificial — Hospital de Pitalito (Huila, Colombia).
 
 ---
 
